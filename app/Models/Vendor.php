@@ -9,8 +9,10 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Spatie\Sitemap\Contracts\Sitemapable;
+use Spatie\Sitemap\Tags\Url;
 
-class Vendor extends Model
+class Vendor extends Model implements Sitemapable
 {
     use HasFactory, SoftDeletes;
 
@@ -94,5 +96,13 @@ class Vendor extends Model
     public function commissionRate(): float
     {
         return (float) config('porrop.commission.rate');
+    }
+
+    public function toSitemapTag(): Url|string|array
+    {
+        return Url::create(route('store.show', $this))
+            ->setLastModificationDate($this->updated_at)
+            ->setChangeFrequency(Url::CHANGE_FREQUENCY_WEEKLY)
+            ->setPriority(0.7);
     }
 }

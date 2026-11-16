@@ -9,8 +9,10 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Spatie\Sitemap\Contracts\Sitemapable;
+use Spatie\Sitemap\Tags\Url;
 
-class Product extends Model
+class Product extends Model implements Sitemapable
 {
     use BelongsToVendor, HasFactory, SoftDeletes;
 
@@ -59,5 +61,13 @@ class Product extends Model
     public function getInStockAttribute(): bool
     {
         return $this->variants->sum('stock_quantity') > 0;
+    }
+
+    public function toSitemapTag(): Url|string|array
+    {
+        return Url::create(route('store.product', [$this->vendor, $this]))
+            ->setLastModificationDate($this->updated_at)
+            ->setChangeFrequency(Url::CHANGE_FREQUENCY_WEEKLY)
+            ->setPriority(0.6);
     }
 }

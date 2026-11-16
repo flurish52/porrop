@@ -1,2 +1,14 @@
 User-agent: *
-Disallow:
+Disallow: /register
+Disallow: /forgot-password
+Disallow: /reset-password
+Disallow: /dashboard
+Disallow: /profile
+Disallow: /admin
+Disallow: /paystack/
+Disallow: /store/*/dashboard
+Disallow: /store/*/cart
+Disallow: /store/*/checkout
+Disallow: /store/*/orders/
+
+Sitemap: https://porrop.com.ng/sitemap.xml
