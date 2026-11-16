@@ -10,15 +10,100 @@ const props = defineProps({
 })
 
 const picker = ref(null)
+const compressing = ref(false)
 const upload = useForm({ images: [], product_variant_id: '' })
 
 const remaining = computed(() => props.max - props.images.length)
 const canAttach = computed(() => props.variants.length > 1)
+const busy = computed(() => upload.processing || compressing.value)
 
-const onPick = (e) => {
+// ---- Client-side compression -------------------------------------------------
+const MAX_SIDE = 1600 // px, longest side
+const TARGET_BYTES = 400 * 1024 // aim for ~400 KB or less
+const QUALITIES = [0.82, 0.72, 0.62, 0.52]
+
+const loadBitmap = async (file) => {
+    try {
+        // Applies the phone's EXIF rotation so photos don't come out sideways
+        return await createImageBitmap(file, { imageOrientation: 'from-image' })
+    } catch {
+        // Older browsers: fall back to an <img> element
+        const url = URL.createObjectURL(file)
+        try {
+            return await new Promise((resolve, reject) => {
+                const img = new Image()
+                img.onload = () => resolve(img)
+                img.onerror = reject
+                img.src = url
+            })
+        } finally {
+            URL.revokeObjectURL(url)
+        }
+    }
+}
+
+const toBlob = (canvas, type, quality) =>
+    new Promise((resolve) => canvas.toBlob(resolve, type, quality))
+
+const compress = async (file) => {
+    if (file.size <= TARGET_BYTES) return file // already small, leave it alone
+
+    try {
+        const bitmap = await loadBitmap(file)
+        const srcW = bitmap.width || bitmap.naturalWidth
+        const srcH = bitmap.height || bitmap.naturalHeight
+        let best = null
+
+        for (const scaleStep of [1, 0.75, 0.5]) {
+            const ratio = Math.min(1, MAX_SIDE / Math.max(srcW, srcH)) * scaleStep
+            const canvas = document.createElement('canvas')
+            canvas.width = Math.max(1, Math.round(srcW * ratio))
+            canvas.height = Math.max(1, Math.round(srcH * ratio))
+            const ctx = canvas.getContext('2d')
+            ctx.drawImage(bitmap, 0, 0, canvas.width, canvas.height)
+
+            for (const q of QUALITIES) {
+                // WebP keeps transparency (PNG logos); browsers without WebP encoding return PNG, so we retry as JPEG
+                let blob = await toBlob(canvas, 'image/webp', q)
+                if (!blob || blob.type !== 'image/webp') {
+                    // JPEG has no transparency: paint white behind it
+                    ctx.globalCompositeOperation = 'destination-over'
+                    ctx.fillStyle = '#fff'
+                    ctx.fillRect(0, 0, canvas.width, canvas.height)
+                    blob = await toBlob(canvas, 'image/jpeg', q)
+                }
+                if (!blob) continue
+                if (!best || blob.size < best.size) best = blob
+                if (blob.size <= TARGET_BYTES) {
+                    best = blob
+                    break
+                }
+            }
+            if (best && best.size <= TARGET_BYTES) break
+        }
+
+        if (bitmap.close) bitmap.close()
+        if (!best || best.size >= file.size) return file // never make it bigger
+
+        const ext = best.type === 'image/webp' ? 'webp' : 'jpg'
+        const base = file.name.replace(/\.[^.]+$/, '') || 'photo'
+        return new File([best], `${base}.${ext}`, { type: best.type, lastModified: Date.now() })
+    } catch {
+        return file // if anything goes wrong, upload the original
+    }
+}
+
+const onPick = async (e) => {
     const files = Array.from(e.target.files || []).slice(0, Math.max(remaining.value, 0))
     if (!files.length) return
-    upload.images = files
+
+    compressing.value = true
+    try {
+        upload.images = await Promise.all(files.map(compress))
+    } finally {
+        compressing.value = false
+    }
+
     upload.post(props.uploadUrl, {
         forceFormData: true,
         preserveScroll: true,
@@ -28,6 +113,7 @@ const onPick = (e) => {
         },
     })
 }
+// -----------------------------------------------------------------------------
 
 const makeMain = (img) => router.patch(img.updateUrl, { is_primary: true }, { preserveScroll: true })
 const attach = (img, e) =>
@@ -95,20 +181,20 @@ const uploadErrors = computed(() => Object.entries(upload.errors).map(([k, v]) =
 
             <label
                 class="inline-flex cursor-pointer items-center rounded-xl border-2 border-dashed border-primary/30 px-5 py-3 text-sm font-semibold text-primary hover:bg-primary-light focus-within:ring-2 focus-within:ring-primary"
-                :class="{ 'pointer-events-none opacity-50': remaining <= 0 || upload.processing }"
+                :class="{ 'pointer-events-none opacity-50': remaining <= 0 || busy }"
             >
-                {{ upload.processing ? 'Uploading...' : remaining <= 0 ? 'Photo limit reached' : 'Add photos' }}
+                {{ compressing ? 'Preparing photos...' : upload.processing ? 'Uploading...' : remaining <= 0 ? 'Photo limit reached' : 'Add photos' }}
                 <input
                     ref="picker"
                     type="file"
                     class="sr-only"
                     accept="image/jpeg,image/png,image/webp"
                     multiple
-                    :disabled="remaining <= 0 || upload.processing"
+                    :disabled="remaining <= 0 || busy"
                     @change="onPick"
                 />
             </label>
-            <p class="mt-2 text-xs text-neutral-text/60">JPG, PNG or WebP, up to 5 MB each.</p>
+            <p class="mt-2 text-xs text-neutral-text/60">JPG, PNG or WebP. Large phone photos are shrunk automatically before upload.</p>
 
             <ul v-if="uploadErrors.length" class="mt-2 space-y-1 text-sm text-red-700" role="alert">
                 <li v-for="(e, i) in uploadErrors" :key="i">{{ e }}</li>
