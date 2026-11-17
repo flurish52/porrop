@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Store;
 
 use App\Models\Product;
+use App\Support\ShareMeta;
 use Inertia\Response;
 
 class ProductPageController extends StoreAreaController
@@ -33,6 +34,6 @@ class ProductPageController extends StoreAreaController
                 ])->values(),
             ],
             'addUrl' => route('store.cart.add', ['vendor' => $vendor]),
-        ]);
+        ])->withViewData(['meta' => ShareMeta::product($vendor, $product)]);;
     }
 }

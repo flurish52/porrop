@@ -13,6 +13,17 @@
 
     <!-- Scripts -->
     @routes
+    @isset($meta)
+        <meta property="og:type" content="website">
+        <meta property="og:title" content="{{ $meta['title'] }}">
+        <meta property="og:description" content="{{ $meta['description'] }}">
+        <meta property="og:url" content="{{ $meta['url'] }}">
+        @if (!empty($meta['image']))
+            <meta property="og:image" content="{{ $meta['image'] }}">
+        @endif
+        <meta name="twitter:card" content="summary_large_image">
+    @endisset
+
     @vite(['resources/js/app.js', "resources/js/pages/{$page['component']}.vue"])
     @inertiaHead
 </head>

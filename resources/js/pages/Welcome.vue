@@ -14,8 +14,8 @@
  * `defineOptions({ layout })` assigns the layout for this page. If your app.js already sets a
  * default layout in resolve(), remove it for this page or this line (not both).
  */
-import { computed } from 'vue'
-import { Head, usePage } from '@inertiajs/vue3'
+import {computed} from 'vue'
+import {Head, usePage} from '@inertiajs/vue3'
 import LandingLayout from '@/Layouts/LandingLayout.vue'
 import VendorHero from '@/Components/Landing/VendorHero.vue'
 import WhyPorrop from '@/Components/Landing/WhyPorrop.vue'
@@ -23,11 +23,18 @@ import HowItWorks from '@/Components/Landing/HowItWorks.vue'
 import Pricing from '@/Components/Landing/Pricing.vue'
 import Faq from '@/Components/Landing/Faq.vue'
 import ClosingCta from '@/Components/Landing/ClosingCta.vue'
+import StoresStrip from '@/Components/Landing/StoresStrip.vue'
 
-defineOptions({ layout: LandingLayout })
+
+defineOptions({
+    layout: LandingLayout,
+    })
 
 const props = defineProps({
-    commission: { type: Object, default: () => ({ rate: 10, min: 100, max: 5000 }) },
+    commission: {type: Object, default: () => ({rate: 10, min: 100, max: 5000})},
+    stores: {
+        type: Array, default: () => []
+    }
 })
 
 const page = usePage()
@@ -58,11 +65,12 @@ const whatsappHref = computed(() => {
     </Head>
 
     <div>
-        <VendorHero :commission-chips="chips" :whatsapp-href="whatsappHref" />
-        <WhyPorrop />
-        <HowItWorks />
-        <Pricing :rate="commission.rate" :min="commission.min" :max="commission.max" />
-        <Faq />
-        <ClosingCta />
+        <VendorHero :commission-chips="chips" :whatsapp-href="whatsappHref"/>
+        <WhyPorrop/>
+        <HowItWorks/>
+        <StoresStrip v-if="stores.length" :stores="stores" />
+        <Pricing :rate="commission.rate" :min="commission.min" :max="commission.max"/>
+        <Faq/>
+        <ClosingCta/>
     </div>
 </template>

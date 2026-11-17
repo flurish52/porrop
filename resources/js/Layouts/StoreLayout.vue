@@ -50,7 +50,9 @@ const onCartPage = computed(() => ['Store/Cart', 'Store/Checkout'].includes(page
                 <a href="/privacy" class="underline">Privacy</a> &middot;
                 <a href="/refunds" class="underline">Refunds</a>
             </p>
-            <p class="mt-2">Powered by <a href="/" class="underline">Porrop</a></p>
+            Powered by <a href="/" class="underline">Porrop</a>
+            <span aria-hidden="true"> &middot; </span>
+            <a href="/orders/find" class="underline">Find my order</a>
         </footer>
     </div>
 </template>

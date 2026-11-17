@@ -1,5 +1,5 @@
 <script setup>
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { Head, Link } from '@inertiajs/vue3'
 import StoreLayout from '@/Layouts/StoreLayout.vue'
 
@@ -27,6 +27,36 @@ const chatHref = computed(() =>
         ? `https://wa.me/${props.shop.whatsapp_number}?text=${encodeURIComponent(`Hello, about my order ${props.order.reference}.`)}`
         : '',
 )
+
+// The receipt email goes out once payment is confirmed
+const emailSent = computed(() => ['paid', 'processing', 'ready', 'completed'].includes(props.order.status))
+
+// If the controller sends order.email, show it partly hidden (ada@gmail.com -> a••@gmail.com)
+const maskedEmail = computed(() => {
+    const e = props.order.email
+    if (!e || !e.includes('@')) return ''
+    const [name, domain] = e.split('@')
+    return `${name.slice(0, 1)}${'•'.repeat(Math.max(name.length - 1, 2))}@${domain}`
+})
+
+const copied = ref(false)
+const copyId = async () => {
+    try {
+        await navigator.clipboard.writeText(props.order.reference)
+    } catch {
+        const el = document.getElementById('order-ref')
+        if (el) {
+            const range = document.createRange()
+            range.selectNodeContents(el)
+            const sel = window.getSelection()
+            sel.removeAllRanges()
+            sel.addRange(range)
+            document.execCommand?.('copy')
+        }
+    }
+    copied.value = true
+    setTimeout(() => (copied.value = false), 2000)
+}
 </script>
 
 <template>
@@ -41,6 +71,34 @@ const chatHref = computed(() =>
                 Message the seller
             </a>
         </div>
+
+        <!-- Keep your order ID -->
+        <section class="rounded-2xl border border-accent/60 bg-accent/10 p-5 sm:p-6" aria-labelledby="keep-id-title">
+            <h2 id="keep-id-title" class="font-heading text-lg font-semibold text-primary-dark">Keep your order ID</h2>
+            <p class="mt-1 text-sm text-neutral-text/80">
+                You will need it to track this order. Take a screenshot of this page or save the ID below.
+            </p>
+
+            <div class="mt-3 flex flex-col gap-2 sm:flex-row sm:items-center">
+                <p id="order-ref" class="select-all rounded-lg bg-white px-4 py-2.5 text-center font-mono text-base font-semibold tracking-wide text-primary-dark sm:flex-1 sm:text-left">{{ order.reference }}</p>
+                <button
+                    type="button"
+                    class="rounded-lg border border-primary/25 bg-white px-4 py-2.5 text-sm font-semibold text-primary-dark hover:bg-primary-light focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                    @click="copyId"
+                >
+                    <span aria-live="polite">{{ copied ? 'Copied' : 'Copy ID' }}</span>
+                </button>
+            </div>
+
+            <p v-if="emailSent" class="mt-3 text-sm text-neutral-text/80">
+                We have also sent a copy of this order to the email you entered at checkout<span v-if="maskedEmail"> ({{ maskedEmail }})</span>. If you can't see it, check your spam folder.
+            </p>
+
+            <p class="mt-3 text-sm text-neutral-text/80">
+                Lost it? Track your order any time on the
+                <a href="/orders/find" class="font-medium text-primary underline">order tracking page</a>.
+            </p>
+        </section>
 
         <div class="rounded-2xl bg-white p-5 shadow-soft sm:p-6">
             <h2 class="font-heading text-lg font-semibold text-primary-dark">Items</h2>

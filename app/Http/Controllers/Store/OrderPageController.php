@@ -5,13 +5,18 @@ namespace App\Http\Controllers\Store;
 use App\Models\Order;
 use Inertia\Response;
 
-/** The customer's order page. Needs no login: the reference is the key, so we never show commission here. */
+/**
+ * The customer's order page. Needs no login: the long private token in the link is the key.
+ * (The short PRP- reference is only a label and no longer opens this page.)
+ * We never show commission here.
+ */
 class OrderPageController extends StoreAreaController
 {
+    // The route parameter is still named {reference}; it now carries the order's public_token.
     public function show(string $reference): Response
     {
-        // Scoped to this store, so a reference from another store is a 404.
-        $order = Order::with('items')->where('reference', $reference)->firstOrFail();
+        // Scoped to this store, so a token from another store is a 404.
+        $order = Order::with('items')->where('public_token', $reference)->firstOrFail();
 
         return $this->page('Store/Order', [
             'order' => [

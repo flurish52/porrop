@@ -25,6 +25,7 @@ const scrolled = ref(false)
 // Plain anchors: these jump within the landing page, so they are <a>, not Inertia <Link>.
 const navLinks = [
     { label: 'How it works', href: '/#how-it-works' },
+    { label: 'Stores', href: '/stores' },
     { label: 'Pricing', href: '/#pricing' },
     { label: 'FAQ', href: '/#faq' },
 ]

@@ -3,9 +3,9 @@
 namespace App\Http\Controllers;
 
 use App\Models\Product;
-use App\Models\Vendor;
 use Inertia\Inertia;
 use Inertia\Response;
+use App\Support\ShareMeta;
 
 class StoreController extends Controller
 {
@@ -33,6 +33,8 @@ class StoreController extends Controller
                 'name' => $vendor->name,
                 'slug' => $vendor->slug,
                 'description' => $vendor->description,
+                'tagline' => $vendor->tagline,
+                'banner' => $vendor->banner_url,
                 'logo' => $vendor->logo_url,
                 'whatsapp_number' => $vendor->whatsapp_number,
                 'cart_url' => route('store.cart', ['vendor' => $vendor]),
@@ -40,6 +42,6 @@ class StoreController extends Controller
                 'cart' => app(\App\Services\CartService::class)->panel($vendor),
             ],
             'products' => $products,
-        ]);
+        ])->withViewData(['meta' => ShareMeta::store($vendor)]);
     }
 }

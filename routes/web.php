@@ -1,12 +1,15 @@
 <?php
 
 use App\Http\Controllers\DashboardRedirectController;
+use App\Http\Controllers\OrderLookupController;
 use App\Http\Controllers\PaystackController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\StoreController;
+use App\Http\Controllers\StoreDirectoryController;
 use App\Http\Controllers\Vendor\DashboardController as VendorDashboardController;
 use App\Http\Controllers\Vendor\ProductController;
 use App\Http\Controllers\Vendor\ProductImageController;
+use App\Http\Controllers\Vendor\StoreProfileController;
 use App\Http\Controllers\VendorRegistrationController;
 use App\Http\Controllers\WelcomeController;
 use App\Http\Middleware\EnsureVendorMember;
@@ -98,6 +101,9 @@ Route::prefix(config('porrop.vendor_prefix', 'store').'/{vendor:slug}')
                 Route::get('payout', [PayoutController::class, 'edit'])->name('vendor.payout.edit');
                 Route::put('payout', [PayoutController::class, 'update'])->name('vendor.payout.update');
                 Route::get('payout/check', [PayoutController::class, 'check'])->middleware('throttle:10,1')->name('vendor.payout.check');
+
+                Route::get('profile', [StoreProfileController::class, 'edit'])->name('vendor.profile.edit');
+                Route::put('profile', [StoreProfileController::class, 'update'])->name('vendor.profile.update');
             });
         });
     });
@@ -108,4 +114,9 @@ Route::middleware(['auth', EnsurePlatformAdmin::class])->prefix('admin')->group(
     Route::post('payouts/{vendor}', [AdminPayoutController::class, 'store'])->name('admin.payouts.store');
 });
 
+
+
+Route::get('/stores', StoreDirectoryController::class)->name('stores.index');
+Route::get('/orders/find', [OrderLookupController::class, 'show'])->name('orders.find');
+Route::post('/orders/find', [OrderLookupController::class, 'send'])->middleware('throttle:6,1')->name('orders.find.send');
 require __DIR__.'/auth.php';

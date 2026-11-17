@@ -31,6 +31,30 @@ const chatHref = computed(() =>
         ? `https://wa.me/${props.store.whatsapp_number}?text=${encodeURIComponent(`Hello ${props.store.name}, I saw your store on Porrop.`)}`
         : '',
 )
+
+/* ---- search ---- */
+const query = ref('')
+
+// Lowercase and strip accents so "cafe" finds "Café"
+const normalize = (s) =>
+    String(s ?? '')
+        .toLowerCase()
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .trim()
+
+// Every word typed must appear in the product name, in any order ("blue shirt" finds "Shirt, blue")
+const filtered = computed(() => {
+    const words = normalize(query.value).split(/\s+/).filter(Boolean)
+    if (!words.length) return props.products
+    return props.products.filter((p) => {
+        const name = normalize(p.name)
+        return words.every((w) => name.includes(w))
+    })
+})
+
+const searching = computed(() => normalize(query.value) !== '')
+const clearSearch = () => { query.value = '' }
 </script>
 
 <template>
@@ -48,6 +72,7 @@ const chatHref = computed(() =>
             </div>
         </div>
         <header class="bg-primary-dark text-white">
+            <img v-if="store.banner" :src="store.banner" alt="" class="h-28 w-full object-cover sm:h-40" />
             <div class="mx-auto max-w-5xl px-4 py-5 sm:px-6 sm:py-7">
                 <div class="flex items-center gap-3 sm:gap-4">
                     <img v-if="store.logo" :src="store.logo" :alt="`${store.name} logo`" class="h-12 w-12 flex-none rounded-full object-cover sm:h-14 sm:w-14" />
@@ -65,6 +90,7 @@ const chatHref = computed(() =>
                         Cart<span v-if="cart.count" class="rounded-full bg-primary-dark px-2 py-0.5 text-xs font-bold text-white">{{ cart.count }}</span>
                     </button>
                 </div>
+                <p v-if="store.tagline" class="mt-2 text-sm font-medium text-accent">{{ store.tagline }}</p>
 
                 <div v-if="store.description" class="mt-3 max-w-2xl">
                     <p class="text-sm leading-relaxed text-white/80" :class="readMore ? '' : 'line-clamp-3 sm:line-clamp-none'">{{ store.description }}</p>
@@ -92,27 +118,74 @@ const chatHref = computed(() =>
                 No products yet. Check back soon.
             </p>
 
-            <ul v-else class="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
-                <li v-for="p in products" :key="p.id" class="flex flex-col overflow-hidden rounded-xl bg-white shadow-soft">
-                    <a :href="p.url" class="block flex-1">
-                        <div class="aspect-square bg-secondary">
-                            <img v-if="p.image" :src="p.image" :alt="p.name" class="h-full w-full object-cover" loading="lazy" />
-                        </div>
-                        <div class="p-3 pb-2">
-                            <p class="truncate text-sm font-medium">{{ p.name }}</p>
-                            <p class="mt-1 text-sm font-semibold text-primary">{{ p.price_from !== null ? naira(p.price_from) : '' }}</p>
-                        </div>
-                    </a>
-                    <div class="px-3 pb-3">
-                        <p v-if="!p.in_stock" class="text-xs font-medium text-red-700">Sold out</p>
-                        <button v-else-if="p.quick_add_variant_id" type="button" class="w-full rounded-lg bg-accent px-3 py-2 text-sm font-semibold text-ink hover:bg-accent-light focus:outline-none focus-visible:ring-2 focus-visible:ring-primary" @click="addToCart(p)">
-                            {{ inCart(p) ? 'Add one more' : 'Add to cart' }}
+            <template v-else>
+                <!-- Search -->
+                <form role="search" class="mb-5" @submit.prevent>
+                    <label for="product-search" class="sr-only">Search products in {{ store.name }}</label>
+                    <div class="relative">
+                        <svg class="pointer-events-none absolute left-3.5 top-1/2 h-5 w-5 -translate-y-1/2 text-neutral-text/50" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <circle cx="11" cy="11" r="7" /><path d="m20 20-3.5-3.5" />
+                        </svg>
+                        <input
+                            id="product-search"
+                            v-model="query"
+                            type="search"
+                            inputmode="search"
+                            enterkeyhint="search"
+                            autocomplete="off"
+                            autocapitalize="none"
+                            placeholder="Search this store"
+                            class="block w-full rounded-xl border-primary/20 bg-white py-3 pl-11 pr-11 text-base shadow-sm placeholder:text-neutral-text/50 focus:border-primary focus:ring-primary [&::-webkit-search-cancel-button]:hidden"
+                            @keydown.esc="clearSearch"
+                        />
+                        <button
+                            v-if="query"
+                            type="button"
+                            class="absolute inset-y-0 right-0 flex items-center px-3.5 text-neutral-text/50 hover:text-primary focus:outline-none focus-visible:text-primary"
+                            aria-label="Clear search"
+                            @click="clearSearch"
+                        >
+                            <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18" /></svg>
                         </button>
-                        <a v-else :href="p.url" class="block w-full rounded-lg border border-primary/25 px-3 py-2 text-center text-sm font-semibold text-primary-dark hover:bg-primary-light">Choose options</a>
-                        <p v-if="p.quick_add_variant_id && inCart(p)" class="mt-1 text-center text-xs font-medium text-primary">{{ inCart(p) }} in your cart</p>
                     </div>
-                </li>
-            </ul>
+                    <p v-if="searching" class="mt-2 text-sm text-neutral-text/70" aria-live="polite">
+                        {{ filtered.length }} {{ filtered.length === 1 ? 'product' : 'products' }} found
+                    </p>
+                </form>
+
+                <div v-if="!filtered.length" class="rounded-2xl bg-white p-8 text-center shadow-soft">
+                    <p class="text-sm text-neutral-text/70">Nothing matches "{{ query.trim() }}".</p>
+                    <button type="button" class="mt-3 rounded-lg border border-primary/25 px-4 py-2 text-sm font-semibold text-primary-dark hover:bg-primary-light focus:outline-none focus-visible:ring-2 focus-visible:ring-primary" @click="clearSearch">
+                        Show all products
+                    </button>
+                    <p v-if="chatHref" class="mt-4 text-sm text-neutral-text/70">
+                        Can't find it?
+                        <a :href="chatHref" target="_blank" rel="noopener" class="font-medium text-primary underline">Ask the seller on WhatsApp</a>
+                    </p>
+                </div>
+
+                <ul v-else class="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
+                    <li v-for="p in filtered" :key="p.id" class="flex flex-col overflow-hidden rounded-xl bg-white shadow-soft">
+                        <a :href="p.url" class="block flex-1">
+                            <div class="aspect-square bg-secondary">
+                                <img v-if="p.image" :src="p.image" :alt="p.name" class="h-full w-full object-cover" loading="lazy" />
+                            </div>
+                            <div class="p-3 pb-2">
+                                <p class="truncate text-sm font-medium">{{ p.name }}</p>
+                                <p class="mt-1 text-sm font-semibold text-primary">{{ p.price_from !== null ? naira(p.price_from) : '' }}</p>
+                            </div>
+                        </a>
+                        <div class="px-3 pb-3">
+                            <p v-if="!p.in_stock" class="text-xs font-medium text-red-700">Sold out</p>
+                            <button v-else-if="p.quick_add_variant_id" type="button" class="w-full rounded-lg bg-accent px-3 py-2 text-sm font-semibold text-ink hover:bg-accent-light focus:outline-none focus-visible:ring-2 focus-visible:ring-primary" @click="addToCart(p)">
+                                {{ inCart(p) ? 'Add one more' : 'Add to cart' }}
+                            </button>
+                            <a v-else :href="p.url" class="block w-full rounded-lg border border-primary/25 px-3 py-2 text-center text-sm font-semibold text-primary-dark hover:bg-primary-light">Choose options</a>
+                            <p v-if="p.quick_add_variant_id && inCart(p)" class="mt-1 text-center text-xs font-medium text-primary">{{ inCart(p) }} in your cart</p>
+                        </div>
+                    </li>
+                </ul>
+            </template>
         </main>
 
         <CartBar :cart="cart" @open="drawer = true" />

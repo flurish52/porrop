@@ -44,9 +44,9 @@ class PaystackController extends Controller
         }
 
         return redirect()
-            ->route('store.order', ['vendor' => $vendor, 'reference' => $payment->order->reference])
+            ->route('store.order', ['vendor' => $vendor, 'reference' => $payment->order->public_token])
             ->with($ok ? 'success' : 'error', $ok
-                ? 'Payment received. Your order '.$payment->order->reference.' is confirmed.'
+                ? 'Payment received. Your order '.$payment->order->public_token.' is confirmed.'
                 : 'We could not confirm your payment yet. If you were debited, it will update shortly.');
     }
 

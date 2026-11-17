@@ -29,6 +29,8 @@ const whatsappHref = computed(() => {
                 <Link href="/seller-terms" class="text-white/80 hover:text-white">Seller terms</Link>
                 <Link href="/privacy" class="text-white/80 hover:text-white">Privacy</Link>
                 <Link href="/refunds" class="text-white/80 hover:text-white">Refunds</Link>
+                <Link href="/stores" class="text-white/80 hover:text-white">Browse stores</Link>
+                <Link href="/orders/find" class="text-white/80 hover:text-white">Find my order</Link>
 
                 <a v-if="whatsappHref" :href="whatsappHref" target="_blank" rel="noopener" class="text-white/80 hover:text-white">
                     Chat with us

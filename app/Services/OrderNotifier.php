@@ -32,7 +32,7 @@ class OrderNotifier
         ), 'vendor alert', $order);
 
         $this->send($order->guest_email ? [$order->guest_email] : [], fn () => new OrderReceipt(
-            $order, $vendor, route('store.order', ['vendor' => $vendor, 'reference' => $order->reference])
+            $order, $vendor, route('store.order', ['vendor' => $vendor, 'reference' => $order->public_token])
         ), 'customer receipt', $order);
     }
 

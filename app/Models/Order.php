@@ -6,6 +6,7 @@ use App\Models\Concerns\BelongsToVendor;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Str;
 
 class Order extends Model
 {
@@ -25,7 +26,7 @@ class Order extends Model
         'vendor_id', 'reference', 'user_id', 'guest_email', 'full_name', 'guest_phone',
         'fulfillment_type', 'pickup_point_id', 'delivery_address', 'status',
         'subtotal', 'total_amount', 'commission_rate', 'commission_amount', 'vendor_payout', 'payout_status',
-        'received_at', 'received_by',
+        'received_at', 'received_by', 'public_token',
     ];
 
     protected $casts = [
@@ -36,6 +37,15 @@ class Order extends Model
         'vendor_payout' => 'decimal:2',
         'received_at' => 'datetime',
     ];
+
+    protected static function booted(): void
+    {
+        static::creating(function (Order $order) {
+            if (! $order->public_token) {
+                $order->public_token = Str::random(32);
+            }
+        });
+    }
 
     public function items(): HasMany
     {

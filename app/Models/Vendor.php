@@ -23,11 +23,13 @@ class Vendor extends Model implements Sitemapable
     protected $fillable = [
         'name', 'slug', 'description', 'logo_public_id', 'banner_public_id',
         'email', 'phone', 'whatsapp_number', 'socials', 'status',
-        'bank_name', 'bank_code', 'account_number', 'account_name', 'paystack_subaccount_code'
+        'bank_name', 'bank_code', 'account_number', 'account_name', 'paystack_subaccount_code',
+        'tagline', 'banner_public_id', 'listed_in_directory',
     ];
 
     protected $casts = [
         'socials' => 'array',
+        'listed_in_directory' => 'boolean',
     ];
 
     public function getRouteKeyName(): string
@@ -79,6 +81,11 @@ class Vendor extends Model implements Sitemapable
     public function getLogoUrlAttribute(): ?string
     {
         return Cloudinary::url($this->logo_public_id, 'f_auto,q_auto,w_200,h_200,c_fill');
+    }
+
+    public function getBannerUrlAttribute(): ?string
+    {
+        return Cloudinary::url($this->banner_public_id, 'f_auto,q_auto,w_1600,h_480,c_fill,g_auto');
     }
 
     public function hasPayoutDetails(): bool

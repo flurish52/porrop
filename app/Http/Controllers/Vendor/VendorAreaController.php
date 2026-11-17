@@ -21,6 +21,7 @@ abstract class VendorAreaController extends Controller
                 'orders' => route('vendor.orders.index', ['vendor' => $vendor]),
                 'payout' => route('vendor.payout.edit', ['vendor' => $vendor]),
                 'store' => route('store.show', ['vendor' => $vendor]),
+                'profile' => route('vendor.profile.edit', ['vendor' => $vendor]),
 
             ],
         ]);
