@@ -27,6 +27,8 @@
     <meta property="og:url" content="{{ $og['url'] }}">
     @if (!empty($og['image']))
         <meta property="og:image" content="{{ $og['image'] }}">
+        <meta property="og:image:width" content="1000">
+        <meta property="og:image:height" content="525">
     @endif
     <meta name="twitter:card" content="summary_large_image">
 
