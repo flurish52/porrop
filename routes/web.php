@@ -24,6 +24,7 @@ use App\Http\Controllers\Vendor\OrderController as VendorOrderController;
 use App\Http\Controllers\Vendor\PayoutController;
 use App\Http\Controllers\Admin\PayoutController as AdminPayoutController;
 use App\Http\Middleware\EnsurePlatformAdmin;
+use App\Http\Controllers\Admin\StoreController as AdminStoreController;
 
 /*
 |--------------------------------------------------------------------------
@@ -112,6 +113,9 @@ Route::prefix(config('porrop.vendor_prefix', 'store').'/{vendor:slug}')
 Route::middleware(['auth', EnsurePlatformAdmin::class])->prefix('admin')->group(function () {
     Route::get('payouts', [AdminPayoutController::class, 'index'])->name('admin.payouts.index');
     Route::post('payouts/{vendor}', [AdminPayoutController::class, 'store'])->name('admin.payouts.store');
+
+    Route::get('stores', [AdminStoreController::class, 'index'])->name('admin.stores.index');
+    Route::get('stores/{vendor}', [AdminStoreController::class, 'show'])->name('admin.stores.show');
 });
 
 

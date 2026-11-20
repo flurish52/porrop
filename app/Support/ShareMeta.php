@@ -13,6 +13,28 @@ use Illuminate\Support\Str;
  */
 class ShareMeta
 {
+    // f_jpg, not f_auto: chat apps' link crawlers do not always accept WebP/AVIF.
+    private const FIT = 'f_jpg,q_auto,w_1200,h_630,c_fill,g_auto';
+
+    /** Banner, else logo on a plain background, else the Porrop picture, so a link never goes out without an image. */
+    private static function storeImage(Vendor $vendor): string
+    {
+        if ($vendor->banner_public_id) {
+            return Cloudinary::url($vendor->banner_public_id, self::FIT);
+        }
+
+        if ($vendor->logo_public_id) {
+            return Cloudinary::url($vendor->logo_public_id, 'f_jpg,q_auto,w_1200,h_630,c_pad,b_white');
+        }
+
+        return self::fallback();
+    }
+
+    public static function fallback(): string
+    {
+        return asset('brand/og-default.png');
+    }
+
     public static function store(Vendor $vendor): array
     {
         $description = $vendor->tagline
@@ -23,7 +45,7 @@ class ShareMeta
             'title' => "{$vendor->name} on Porrop",
             'description' => $description,
             'url' => route('store.show', ['vendor' => $vendor]),
-            'image' => Cloudinary::url($vendor->banner_public_id ?: $vendor->logo_public_id, 'f_auto,q_auto,w_1200,h_630,c_fill,g_auto'),
+            'image' => self::storeImage($vendor),
         ];
     }
 
@@ -41,7 +63,7 @@ class ShareMeta
             'title' => "{$product->name} - {$vendor->name}",
             'description' => trim($line.($about ?: "Order and pay online at {$vendor->name}.")),
             'url' => route('store.product', ['vendor' => $vendor, 'product' => $product]),
-            'image' => $image ? Cloudinary::url($image->cloudinary_public_id, 'f_auto,q_auto,w_1200,h_630,c_fill,g_auto') : null,
+            'image' => $image ? Cloudinary::url($image->cloudinary_public_id, self::FIT) : self::fallback(),
         ];
     }
 }
